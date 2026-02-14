@@ -10,9 +10,26 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configurar Entity Framework con SQLite
+// Configurar Entity Framework con SQL Server
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Validar que existe la cadena de conexión
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException(
+        "No se encontró la cadena de conexión 'DefaultConnection'. " +
+        "Asegúrate de configurarla en Azure App Service Configuration → Connection strings.");
+}
+
+// Log de la cadena de conexión (ocultando la password para seguridad)
+var sanitizedConnection = connectionString.Contains("Password=")
+    ? System.Text.RegularExpressions.Regex.Replace(connectionString, @"Password=[^;]+", "Password=***")
+    : connectionString;
+
+Console.WriteLine($"[INFO] Cadena de conexión: {sanitizedConnection}");
+
 builder.Services.AddDbContext<FinancialDbContext>(options =>
-    options.UseSqlite("Data Source=financial.db"));
+    options.UseSqlServer(connectionString));
 
 // Configurar CORS
 builder.Services.AddCors(options =>
@@ -27,11 +44,24 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Crear la base de datos al iniciar
-using (var scope = app.Services.CreateScope())
+// Aplicar migraciones automáticamente al iniciar (con manejo de errores)
+try
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<FinancialDbContext>();
-    dbContext.Database.EnsureCreated();
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<FinancialDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        logger.LogInformation("Aplicando migraciones a la base de datos...");
+        dbContext.Database.Migrate();
+        logger.LogInformation("Migraciones aplicadas correctamente.");
+    }
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Error al aplicar migraciones a la base de datos: {Message}", ex.Message);
+    throw; // Lanzar la excepción para que Azure muestre el error específico
 }
 
 // Configure the HTTP request pipeline.
