@@ -1,0 +1,160 @@
+@page "/charts"
+@rendermode InteractiveWebAssembly
+@using FinancialShortcutFrontend.Client.Components.Charts
+@using static FinancialShortcutFrontend.Client.Components.Charts.FinancialChart
+
+<PageTitle>Financial Charts</PageTitle>
+
+<h1>📊 Financial Charts Example</h1>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>Revenue Over Time</h3>
+            </div>
+            <div class="card-body">
+                <FinancialChart @ref="lineChart"
+                                ChartType="line"
+                                Labels="@lineLabels"
+                                Datasets="@lineDatasets"
+                                Height="400px" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>Expense Categories</h3>
+            </div>
+            <div class="card-body">
+                <FinancialChart ChartType="doughnut"
+                                Labels="@pieLabels"
+                                Datasets="@pieDatasets"
+                                Height="300px" />
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>Monthly Comparison</h3>
+            </div>
+            <div class="card-body">
+                <FinancialChart ChartType="bar"
+                                Labels="@barLabels"
+                                Datasets="@barDatasets"
+                                Height="300px" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <button class="btn btn-primary" @onclick="UpdateData">
+            🔄 Update Data
+        </button>
+    </div>
+</div>
+
+@code {
+    private FinancialChart? lineChart;
+
+    private List<string> lineLabels = new() { "Jan", "Feb", "Mar", "Apr", "May", "Jun" };
+    private List<ChartDataset> lineDatasets = new();
+
+    private List<string> pieLabels = new() { "Salaries", "Marketing", "Operations", "R&D" };
+    private List<ChartDataset> pieDatasets = new();
+
+    private List<string> barLabels = new() { "Q1", "Q2", "Q3", "Q4" };
+    private List<ChartDataset> barDatasets = new();
+
+    protected override void OnInitialized()
+    {
+        InitializeData();
+    }
+
+    private void InitializeData()
+    {
+        // Line chart data - Revenue
+        lineDatasets = new List<ChartDataset>
+        {
+            new ChartDataset
+            {
+                Label = "Revenue ($1000s)",
+                Data = new List<double> { 65, 78, 90, 81, 96, 105 },
+                BorderColor = "rgb(75, 192, 192)",
+                BackgroundColor = "rgba(75, 192, 192, 0.2)",
+                Fill = true
+            },
+            new ChartDataset
+            {
+                Label = "Expenses ($1000s)",
+                Data = new List<double> { 45, 52, 60, 58, 65, 70 },
+                BorderColor = "rgb(255, 99, 132)",
+                BackgroundColor = "rgba(255, 99, 132, 0.2)",
+                Fill = true
+            }
+        };
+
+        // Pie chart data - Expenses by category
+        pieDatasets = new List<ChartDataset>
+        {
+            new ChartDataset
+            {
+                Label = "Expenses",
+                Data = new List<double> { 45, 25, 20, 10 },
+                BackgroundColor = new[]
+                {
+                    "rgba(255, 99, 132, 0.8)",
+                    "rgba(54, 162, 235, 0.8)",
+                    "rgba(255, 206, 86, 0.8)",
+                    "rgba(75, 192, 192, 0.8)"
+                },
+                BorderWidth = 1
+            }
+        };
+
+        // Bar chart data - Quarterly comparison
+        barDatasets = new List<ChartDataset>
+        {
+            new ChartDataset
+            {
+                Label = "2024",
+                Data = new List<double> { 220, 240, 270, 300 },
+                BackgroundColor = "rgba(54, 162, 235, 0.8)",
+                BorderColor = "rgb(54, 162, 235)",
+                BorderWidth = 1
+            },
+            new ChartDataset
+            {
+                Label = "2023",
+                Data = new List<double> { 200, 220, 250, 280 },
+                BackgroundColor = "rgba(255, 206, 86, 0.8)",
+                BorderColor = "rgb(255, 206, 86)",
+                BorderWidth = 1
+            }
+        };
+    }
+
+    private async Task UpdateData()
+    {
+        var random = new Random();
+
+        // Update line chart data
+        lineDatasets[0].Data = Enumerable.Range(0, 6)
+            .Select(_ => (double)random.Next(50, 120))
+            .ToList();
+
+        if (lineChart != null)
+        {
+            await lineChart.UpdateChart();
+        }
+
+        StateHasChanged();
+    }
+}

@@ -1,3 +1,5 @@
 <Solution>
   <Project Path="FinancialShortcutApi/FinancialShortcutApi.csproj" />
+  <Project Path="FinancialShortcutFrontend/FinancialShortcutFrontend.Client/FinancialShortcutFrontend.Client.csproj" Id="a0e6de74-f761-4cb5-a32f-3c81c2034e1f" />
+  <Project Path="FinancialShortcutFrontend/FinancialShortcutFrontend/FinancialShortcutFrontend.csproj" Id="685dbd53-4086-4b9b-816f-fb034633e6b6" />
 </Solution>

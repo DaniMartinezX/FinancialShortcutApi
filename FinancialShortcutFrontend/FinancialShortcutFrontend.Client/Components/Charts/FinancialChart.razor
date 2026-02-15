@@ -1,0 +1,103 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="chart-container" style="position: relative; height:@Height; width:@Width;">
+    <canvas id="@ChartId"></canvas>
+</div>
+
+@code {
+    [Parameter] public string ChartId { get; set; } = $"chart-{Guid.NewGuid():N}";
+    [Parameter] public string Height { get; set; } = "400px";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public string ChartType { get; set; } = "line";
+    [Parameter] public List<string> Labels { get; set; } = new();
+    [Parameter] public List<ChartDataset> Datasets { get; set; } = new();
+    [Parameter] public object? Options { get; set; }
+
+    private bool _chartCreated = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CreateChart();
+        }
+    }
+
+    private async Task CreateChart()
+    {
+        try
+        {
+            _chartCreated = await JS.InvokeAsync<bool>(
+                "chartHelper.createChart",
+                ChartId,
+                ChartType,
+                Labels,
+                Datasets.Select(d => new
+                {
+                    label = d.Label,
+                    data = d.Data,
+                    backgroundColor = d.BackgroundColor,
+                    borderColor = d.BorderColor,
+                    borderWidth = d.BorderWidth,
+                    fill = d.Fill
+                }).ToArray(),
+                Options
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating chart: {ex.Message}");
+        }
+    }
+
+    public async Task UpdateChart()
+    {
+        if (_chartCreated)
+        {
+            try
+            {
+                await JS.InvokeAsync<bool>(
+                    "chartHelper.updateChart",
+                    ChartId,
+                    Labels,
+                    Datasets.Select(d => new
+                    {
+                        label = d.Label,
+                        data = d.Data,
+                        backgroundColor = d.BackgroundColor,
+                        borderColor = d.BorderColor,
+                        borderWidth = d.BorderWidth,
+                        fill = d.Fill
+                    }).ToArray()
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating chart: {ex.Message}");
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_chartCreated)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("chartHelper.destroyChart", ChartId);
+            }
+            catch { }
+        }
+    }
+
+    public class ChartDataset
+    {
+        public string Label { get; set; } = "";
+        public List<double> Data { get; set; } = new();
+        public object? BackgroundColor { get; set; } // Can be string or string[]
+        public object? BorderColor { get; set; } // Can be string or string[]
+        public int BorderWidth { get; set; } = 2;
+        public bool Fill { get; set; } = false;
+    }
+}
