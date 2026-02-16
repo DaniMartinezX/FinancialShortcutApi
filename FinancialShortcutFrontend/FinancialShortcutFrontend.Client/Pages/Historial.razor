@@ -1,0 +1,109 @@
+﻿@page "/historial"
+@rendermode InteractiveWebAssembly
+@using FinancialShortcutFrontend.Client.Models
+@inject HttpClient Http
+
+<PageTitle>Historial de finanzas</PageTitle>
+
+<h1>Últimos movimientos</h1>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    @if (transacciones == null)
+                    {
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border text-primary me-3" role="status"></div>
+                            <span>Cargando tus finanzas desde Azure...</span>
+                        </div>
+                    }
+                    else if (!transacciones.Any())
+                    {
+                        <div class="alert alert-info">Aún no tienes movimientos registrados.</div>
+                    }
+                    else
+                    {
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Categoría</th>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in transacciones)
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (t.fecha.ToLocalTime().Date == DateTime.Today)
+                                            {
+                                                <span class="badge bg-info text-dark">Hoy</span>
+                                            }
+                                            else if (t.fecha.ToLocalTime().Date == DateTime.Today.AddDays(-1))
+                                            {
+                                                <span class="badge bg-secondary">Ayer</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fw-bold">@ToUpperFirst(t.fecha.ToLocalTime().ToString("dddd", new System.Globalization.CultureInfo("es-ES")))</span>
+                                            }
+                                            <div class="text-muted small">@t.fecha.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                        </td>
+                                        @if (t.tipoMovimiento == "Inversión")
+                                        {
+                                            <td><span class="text-muted fst-italic">---</span></td>
+                                        }
+                                        else
+                                        {
+                                            <td>@t.categoria</td>
+                                        }
+                                        <td>
+                                            <span class="badge @(t.tipoMovimiento != "Gasto" ? "bg-success" : "bg-danger")">
+                                                @t.tipoMovimiento
+                                            </span>
+                                        </td>
+                                        <td class="text-end fw-bold @(t.tipoMovimiento == "Ingreso" ? "text-success" : "text-dark")">
+                                            @(t.tipoMovimiento == "Gasto" ? "-" : "+") @t.cantidad.ToString("N2") €
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // 1. Declaramos la variable que usará la tabla
+    private List<TransaccionDto>? transacciones;
+
+    // 2. Este método se ejecuta automáticamente cuando la página carga
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // 3. Llamamos a tu API de Azure
+            // "api/transacciones" es la ruta que configuraste en tu Minimal API
+            transacciones = await Http.GetFromJsonAsync<List<TransaccionDto>>("api/transacciones");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar datos: {ex.Message}");
+            // Aquí podrías inicializarla vacía para que no de error la página
+            transacciones = new List<TransaccionDto>();
+        }
+    }
+}
+
+@functions {
+    // Método de extensión para capitalizar la primera letra
+    public static string ToUpperFirst(string s) =>
+            string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1);
+}
