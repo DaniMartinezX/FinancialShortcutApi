@@ -7,6 +7,22 @@
 
 <h1>Últimos movimientos</h1>
 
+@* --- SECCIÓN DE FILTROS --- *@
+<div class="d-flex gap-2 mb-4">
+    <button class="btn btn-sm @(filtroActual == "Todos" ? "btn-primary" : "btn-outline-primary") rounded-pill"
+            @onclick='() => SetFiltro("Todos")'>
+        Todos
+    </button>
+    <button class="btn btn-sm @(filtroActual == "Plus" ? "btn-success" : "btn-outline-success") rounded-pill"
+            @onclick='() => SetFiltro("Plus")'>
+        <i class="bi bi-graph-up"></i> Plus
+    </button>
+    <button class="btn btn-sm @(filtroActual == "Gastos" ? "btn-danger" : "btn-outline-danger") rounded-pill"
+            @onclick='() => SetFiltro("Gastos")'>
+        <i class="bi bi-cart-dash"></i> Gastos
+    </button>
+</div>
+
 <div class="row mt-4">
     <div class="col-12">
         <div class="card shadow-sm">
@@ -19,7 +35,7 @@
                             <span>Cargando tus finanzas desde Azure...</span>
                         </div>
                     }
-                    else if (!transacciones.Any())
+                    else if (!TransaccionesFiltradas.Any())
                     {
                         <div class="alert alert-info">Aún no tienes movimientos registrados.</div>
                     }
@@ -35,7 +51,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var t in transacciones)
+                                @foreach (var t in TransaccionesFiltradas)
                                 {
                                     <tr>
                                         <td>
@@ -83,6 +99,17 @@
 @code {
     // 1. Declaramos la variable que usará la tabla
     private List<TransaccionDto>? transacciones;
+    private string filtroActual = "Todos";
+
+    private IEnumerable<TransaccionDto> TransaccionesFiltradas =>
+        filtroActual switch
+        {
+            "Plus" => transacciones?.Where(t => t.tipoMovimiento == "Ingreso" || t.tipoMovimiento == "Inversión") ?? new List<TransaccionDto>(),
+            "Gastos" => transacciones?.Where(t => t.tipoMovimiento == "Gasto") ?? new List<TransaccionDto>(),
+            _ => transacciones ?? new List<TransaccionDto>()
+        };
+
+    private void SetFiltro(string nuevoFiltro) => filtroActual = nuevoFiltro;
 
     // 2. Este método se ejecuta automáticamente cuando la página carga
     protected override async Task OnInitializedAsync()
